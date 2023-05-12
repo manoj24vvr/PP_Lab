@@ -1,0 +1,767 @@
+Name: Atyam V V R Manoj
+Reg No: 200968108
+
+Lab - 7
+
+Q1
+#include<stdio.h>
+#include<stdlib.h>
+#include<mpi.h>
+#define X 5
+
+int power(int num) {
+	int i, pow = 1;
+	for (int i = 1;i <= num;i++)
+		pow *= X;
+	return pow;
+}
+
+int main(int argc, char* argv[]) {
+	int myid, numprocs, namelen;
+	char processor_name[MPI_MAX_PROCESSOR_NAME];
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Get_processor_name(processor_name, &namelen);
+
+
+	if (myid == 0)
+		printf("Value of Integer X is: %d\n...", X);
+	printf("\n%s: %d ^ %d = %d\n", processor_name, X, myid, power(myid));
+	MPI_Finalize();
+
+	return 0;
+}
+
+Q2
+#include<stdio.h>
+#include<stdlib.h>
+#include<mpi.h>
+
+int main(int argc, char* argv[]) {
+	int myid, numprocs, namelen;
+	char processor_name[MPI_MAX_PROCESSOR_NAME];
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Get_processor_name(processor_name, &namelen);
+
+
+	if (myid%2 == 0)
+		printf("%d - Hello \n", myid);
+	else
+		printf("%d - World \n", myid);
+	MPI_Finalize();
+
+	return 0;
+}
+
+Q3
+#include<stdio.h>
+#include<stdlib.h>
+#include<mpi.h>
+#define num1 7
+#define num2 5
+
+int main(int argc, char* argv[]) {
+	int myid, numprocs, namelen;
+	char processor_name[MPI_MAX_PROCESSOR_NAME];
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Get_processor_name(processor_name, &namelen);
+
+	if (myid == 0) {
+		printf("Addition\t");
+		printf("%d + %d = %d\n", num1, num2, num1 + num2);
+	}
+	else if(myid == 1) {
+		printf("Subtraction\t");
+		printf("%d - %d = %d\n", num1, num2, num1 - num2);
+	}
+	else if (myid == 2) {
+		printf("Multiplication\t");
+		printf("%d * %d = %d\n", num1, num2, num1 * num2);
+	}
+	else if (myid == 3) {
+		printf("Division\t");
+		if (num2 == 0)
+			printf("Cannot perform division\n");
+		else {
+			float res;
+			res = num1 / num2;
+			printf("%d / %d = %.2f\n", num1, num2, res);
+		}
+		
+	}
+	MPI_Finalize();
+
+	return 0;
+}
+
+Q4
+#include<stdio.h>
+#include<stdlib.h>
+#include<mpi.h>
+#include<string.h>
+
+char toggle(char ch) {
+	if (ch >= 'A' && ch <= 'Z')
+		return ch + 32;
+	else if (ch >= 'a' && ch <= 'z')
+		return ch - 32;
+}
+
+int main(int argc, char* argv[]) {
+	int myid, numprocs, namelen, len;
+	char processor_name[MPI_MAX_PROCESSOR_NAME];
+	char str[] = "HeLLo";
+	len = strlen(str);
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Get_processor_name(processor_name, &namelen);
+
+	if (myid==0 && numprocs != len) {
+		printf("Number of processors isn't sufficient\t");
+	}
+	else{
+		char ch;
+		ch = str[myid];
+		str[myid] = toggle(str[myid]);
+		printf("Id %d - %c to %c\n", myid, ch, str[myid]);
+	}
+
+	MPI_Finalize();
+
+	return 0;
+}
+
+_______________________________________________________________________________________________
+
+Lab - 8
+
+Q1
+#include<stdlib.h>
+#include<stdio.h>
+#include<mpi.h>
+#define WORD_SIZE 20
+
+int main(int argc, char *argv[]) {
+	int rank, size,i;
+	char str[WORD_SIZE],toggle[WORD_SIZE];
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Status status;
+	if (rank == 0) {
+		printf("Enter a word: ");
+		fflush(stdout);
+		scanf_s("%[^\n]%*c", &str, (unsigned)_countof(str));
+		MPI_Ssend(&str, WORD_SIZE, MPI_CHAR, 1, 1, MPI_COMM_WORLD);
+		fprintf(stdout, "Word: %s sent from process %d\n", str, rank);
+		fflush(stdout);
+		MPI_Recv(&toggle, WORD_SIZE, MPI_CHAR, 1, 0, MPI_COMM_WORLD, &status);
+		fprintf(stdout, "Toggled word: %s received in process %d\n", toggle, rank);
+		fflush(stdout);
+	}
+	else {
+		MPI_Recv(&str, WORD_SIZE, MPI_CHAR, 0, 1, MPI_COMM_WORLD, &status);
+		fprintf(stdout, "Word: %s received in process %d\n", str, rank);
+		fflush(stdout);
+		for (i = 0;str[i] != '\0';i++) {
+			if (str[i] >= 'A' && str[i] <= 'Z')
+				toggle[i] = str[i] + 32;
+			else if (str[i] >= 'a' && str[i] <= 'z')
+				toggle[i] = str[i] - 32;
+		}
+		toggle[i] = '\0';
+		MPI_Ssend(&toggle, WORD_SIZE, MPI_CHAR, 0, 0, MPI_COMM_WORLD);
+		fprintf(stdout, "Toggled word: %s sent from process %d\n", toggle, rank);
+		fflush(stdout);
+	}
+	MPI_Finalize();
+	return 0;
+}
+
+Q2
+#include<stdlib.h>
+#include<stdio.h>
+#include<mpi.h>
+
+int main(int argc, char *argv[]) {
+	int rank, size,i,num;
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Status status;
+	if (rank == 0) {
+		printf("Enter a number: ");
+		fflush(stdout);
+		scanf_s("%d", &num);
+		for (int i = 1;i < size;i++) {
+			MPI_Send(&num, 1, MPI_INT, i, i, MPI_COMM_WORLD);
+			fprintf(stdout, "Number: %d sent from process %d to  process %d\n", num, rank, i);
+			fflush(stdout);
+			num++;
+		}
+	}
+	else {
+		MPI_Recv(&num, 1, MPI_INT, 0, rank, MPI_COMM_WORLD, &status);
+		fprintf(stdout, "Number: %d received in process %d\n", num, rank);
+		fflush(stdout);
+	}
+	MPI_Finalize();
+	return 0;
+}
+
+Q3
+#include<stdlib.h>
+#include<stdio.h>
+#include<mpi.h>
+#define BUF_SIZE 2^16
+
+int main(int argc, char* argv[]) {
+	int rank, size, N, i, num;
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Status status;
+	N = size;
+	int* arr = (int*)malloc(N * sizeof(int));
+	int buf[BUF_SIZE];
+	MPI_Buffer_attach(buf, BUF_SIZE * sizeof(int));
+
+	if (rank == 0) {
+		printf("Enter array size-%d: ", N);
+		fflush(stdout);
+		for (i = 0;i < N;i++)
+			scanf_s("%d", &arr[i]);
+		for (i = 1;i < size;i++) {
+			MPI_Bsend(&arr[i], 1, MPI_INT, i, i, MPI_COMM_WORLD);
+			fprintf(stdout, "Number: %d sent from process %d to  process %d\n", arr[i], rank, i);
+			fflush(stdout);
+		}
+	}
+	else if (rank % 2 == 0) {
+		
+		MPI_Recv(&num, 1, MPI_INT, 0, rank, MPI_COMM_WORLD, &status);
+		//Detach_buffer(&buf);
+		int sq = num * num;
+		fprintf(stdout, "Number: %d received in process %d\nSquare: %d\n", num, rank, sq);
+		fflush(stdout);
+	}
+	else {
+		MPI_Recv(&num, 1, MPI_INT, 0, rank, MPI_COMM_WORLD, &status);
+		int cube = num * num * num;
+		fprintf(stdout, "Number: %d received in process %d\nCube: %d\n", num, rank, cube);
+		fflush(stdout);
+	}
+	free(arr);
+	MPI_Finalize();
+	return 0;
+}
+
+Q4
+#include<stdlib.h>
+#include<stdio.h>
+#include<mpi.h>
+
+int main(int argc, char *argv[]) {
+	int rank,size,num;
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Status status;
+
+	if (rank == 0) {
+		printf("Enter a number: ");
+		fflush(stdout);
+		scanf_s("%d", &num);
+		int dest = (rank + 1) % size;
+		num++;
+		MPI_Send(&num, 1, MPI_INT, dest, dest, MPI_COMM_WORLD);
+		fprintf(stdout, "Number: %d sent from process %d to  process %d\n", num, rank, dest);
+		fflush(stdout);
+
+		int src = size-1;
+		MPI_Recv(&num, 1, MPI_INT, src, rank, MPI_COMM_WORLD, &status);
+		fprintf(stdout, "Number: %d received in process %d\n", num, rank);
+		fflush(stdout);
+	}
+	else {
+		int src = (rank - 1);
+		MPI_Recv(&num, 1, MPI_INT, src, rank, MPI_COMM_WORLD, &status);
+		fprintf(stdout, "Number: %d received in process %d\n", num, rank);
+		fflush(stdout);
+
+		num++;
+		int dest = (rank + 1) % size;
+		MPI_Send(&num, 1, MPI_INT, dest, dest, MPI_COMM_WORLD);
+		fprintf(stdout, "Number: %d sent from process %d to  process %d\n", num, rank, dest);
+		fflush(stdout);
+	}
+	MPI_Finalize();
+	return 0;
+}
+
+Q5
+#include<stdlib.h>
+#include<stdio.h>
+#include<mpi.h>
+
+int main(int argc, char* argv[]) {
+	int rank, size, N, i, num;
+	MPI_Init(&argc, &argv);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Status status;
+	
+	if (rank == 0) {
+		N = size;
+		int* arr = (int*)malloc(N * sizeof(int));
+		printf("Enter array size-%d: ", N);
+		fflush(stdout);
+		for (i = 0;i < N;i++)
+			scanf_s("%d", &arr[i]);
+		for (i = 1;i < size;i++) {
+			MPI_Send(&arr[i], 1, MPI_INT, i, i, MPI_COMM_WORLD);
+			fprintf(stdout, "Number: %d sent from process %d to  process %d\n", arr[i], rank, i);
+			fflush(stdout);
+		}
+		num = arr[rank];
+		free(arr);
+	}
+	else {
+		MPI_Recv(&num, 1, MPI_INT, 0, rank, MPI_COMM_WORLD, &status);
+		fprintf(stdout, "Number: %d received in process %d\n", num, rank);
+		fflush(stdout);
+	}
+	
+	int prime = 1;
+
+	for (i = 2;i <= num / 2;i++) {
+		if (num % i == 0) {
+			prime = 0;
+			break;
+		}
+	}
+	if (prime)
+		fprintf(stdout, "%d is Prime\n",num);
+	else
+		fprintf(stdout, "%d is not Prime\n",num);
+
+	MPI_Finalize();
+	return 0;
+}
+
+______________________________________________________________________________________________
+
+Lab - 9
+
+Q1
+#include <stdio.h>
+#include <mpi.h>
+
+int factorial(int n) {
+    if (n == 0 || n == 1) {
+        return 1;
+    }
+    else {
+        return n * factorial(n - 1);
+    }
+}
+
+int main(int argc, char** argv) {
+    int rank, size;
+    int values[5];
+    int local_factorial_result;
+    int sum = 0;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (rank == 0) {
+        printf("Enter 5 values: ");
+        fflush(stdout);
+        for (int i = 0; i < 5; i++) {
+            scanf_s("%d", &values[i]);
+        }
+    }
+
+    MPI_Bcast(values, 5, MPI_INT, 0, MPI_COMM_WORLD);
+
+    local_factorial_result = factorial(values[rank]);
+
+    MPI_Reduce(&local_factorial_result, &sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Factorial results: ");
+        fflush(stdout);
+        for (int i = 0; i < 5; i++) {
+            printf("%d ", factorial(values[i]));
+        }
+        printf("\nSum of factorials: %d\n", sum);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+//Enter 5 values: 2 3 4 5 6
+//Factorial results: 2 6 24 120 720
+//Sum of factorials: 872
+
+Q2
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <mpi.h>
+
+int main(int argc, char** argv) {
+    int size, rank, i, j, M = 6;
+    int* data = NULL;
+    int* recv_data = NULL;
+    int recv_count;
+    double avg, total_avg = 0.0;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (rank == 0) {
+        data = (int*)malloc(size * M * sizeof(int));
+        printf("Array:\n");
+        for (i = 0; i < size * M; i++) {
+            data[i] = rand() % 100;
+            printf("%d\t", data[i]);
+        }
+    }
+
+    MPI_Bcast(&M, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    recv_count = M;
+    recv_data = (int*)malloc(recv_count * sizeof(int));
+
+    MPI_Scatter(data, recv_count, MPI_INT, recv_data, recv_count, MPI_INT, 0, MPI_COMM_WORLD);
+
+    avg = 0.0;
+    for (i = 0; i < recv_count; i++) {
+        avg += recv_data[i];
+    }
+    avg /= recv_count;
+
+    MPI_Reduce(&avg, &total_avg, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        total_avg /= (size * 1.0);
+        printf("\nTotal average: %f\n", total_avg);
+        free(data);
+    }
+    free(recv_data);
+
+    MPI_Finalize();
+    return 0;
+}
+
+
+//Array:
+//41      67      34      0       69      24      78      58      62      64      5       45      81      27      61
+//        91      95      42      27      36      91      4       2       53      92      82      21      16      18
+//        95
+//Total average: 49.366667
+
+
+Q3
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <mpi.h>
+
+int main(int argc, char** argv) {
+    int rank, size;
+    char str[100];
+    int local_non_vowels = 0;
+    int total_non_vowels = 0;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    if (rank == 0) {
+        printf("Enter a string: ");
+        fflush(stdout);
+        fgets(str, sizeof(str), stdin);
+        // Remove trailing newline
+        if (str[strlen(str) - 1] == '\n') {
+            str[strlen(str) - 1] = '\0';
+        }
+    }
+
+    // Broadcast the string to all processes
+    MPI_Bcast(str, sizeof(str), MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    // Calculate local non-vowels count
+    int local_len = strlen(str) / size;
+    int local_start = rank * local_len;
+    int local_end = (rank == size - 1) ? strlen(str) : local_start + local_len;
+    for (int i = local_start; i < local_end; i++) {
+        if (!isalpha(str[i]) || !strchr("AEIOUaeiou", str[i])) {
+            local_non_vowels++;
+        }
+    }
+
+    // Reduce the local non-vowels count to root process
+    MPI_Reduce(&local_non_vowels, &total_non_vowels, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Non-vowels found by each process: ");
+        fflush(stdout);
+        for (int i = 0; i < size; i++) {
+            printf("%d ", i == 0 ? local_non_vowels : 0);
+        }
+        printf("\nTotal non-vowels: %d\n", total_non_vowels);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+
+//Enter a string: Manoj
+//Total non-vowels: 2
+
+
+
+Q4
+#include <stdio.h>
+#include <string.h>
+#include <mpi.h>
+
+int main(int argc, char** argv) {
+    int size, rank;
+    char s1[10] = "Atyam", s2[10] = "Manoj";
+    char res[20], recv_res[20];
+    int n, i, j;
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    if (rank == 0) {
+
+        n = strlen(s1);
+        if (strlen(s2) != n) {
+            printf("Error: Strings are not of equal length.\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+    }
+
+    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(s1, n, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_Bcast(s2, n, MPI_CHAR, 0, MPI_COMM_WORLD);
+
+    for (i = rank; i < n; i += size) {
+        res[2 * i] = s1[i];
+        res[2 * i + 1] = s2[i];
+    }
+
+    MPI_Allgather(res, 2 * n / size, MPI_CHAR, recv_res, 2 * n / size, MPI_CHAR, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        printf("Resultant string: %s\n", recv_res);
+    }
+
+    MPI_Finalize();
+    return 0;
+}
+______________________________________________________________________________________________
+
+Lab - 10
+
+Q1
+
+#include <stdio.h>
+#include<stdlib.h>
+#include <mpi.h>
+#include <math.h>
+
+int main(int argc, char* argv[]) {
+    int rank, size;
+    int num[5];
+    int recv_num;
+    int i, cube;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (rank == 0) {
+        printf("Enter 5 numbers:\n");
+        for (i = 0; i < 5; i++) {
+            scanf("%d", &num[i]);
+        }
+    }
+    MPI_Bcast(num, 5, MPI_INT, 0, MPI_COMM_WORLD);
+    recv_num = num[rank];
+    cube = pow(recv_num, 3);
+    int* cubes;
+    cubes = (int*)malloc(size * sizeof(int));
+
+    MPI_Gather(&cube, 1, MPI_INT, cubes, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        printf("Cubes of the given numbers:\n");
+        for (i = 0; i < 5; i++) {
+            printf("%d\n", cubes[i]);
+        }
+    }
+    MPI_Finalize();
+    return 0;
+}
+
+Q2
+
+#include <stdio.h>
+#include <string.h>
+#include <mpi.h>
+#define MAX_STRING_LENGTH 100
+void reverseString(char* str) {
+    int i, j;
+    char temp;
+    for (i = 0, j = (int)strlen(str) - 1; i < j; i++, j--) {
+     temp = str[i];
+     str[i] = str[j];
+     str[j] = temp;
+    }
+}
+void toggleString(char* str) {
+    int i;
+    for (i = 0; i < (int)strlen(str); i++) {
+     if (str[i] >= 'a' && str[i] <= 'z') {
+      str[i] = str[i] - 'a' + 'A';
+     }
+     else if (str[i] >= 'A' && str[i] <= 'Z') {
+      str[i] = str[i] - 'A' + 'a';
+     }
+    }
+}
+int main(int argc, char** argv) {
+    int rank, size, i;
+    char strings[3][MAX_STRING_LENGTH + 1], loc_strings[3][MAX_STRING_LENGTH + 1];
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (rank == 0) {
+     printf("Enter three strings: ");
+     fflush(stdout);
+     for (int i = 0; i < 3; i++) {
+      fgets(strings[i], MAX_STRING_LENGTH, stdin);
+      strings[i][(int)strlen(strings[i]) - 1] = '\0';
+     }
+    }
+    MPI_Scatter(strings, MAX_STRING_LENGTH + 1, MPI_CHAR, loc_strings, MAX_STRING_LENGTH + 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    for (i = 0; i < 3; i++) {
+     reverseString(loc_strings[i]);
+     toggleString(loc_strings[i]);
+    }
+    MPI_Gather(loc_strings, MAX_STRING_LENGTH + 1, MPI_CHAR, strings, MAX_STRING_LENGTH + 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+     printf("Modified strings:\n");
+     for (i = 0; i < 3; i++) {
+      printf("%s\n", strings[i]);
+     }
+    }
+    MPI_Finalize();
+    return 0;
+}
+
+
+Q3
+
+#include <stdio.h>
+#include<stdlib.h>
+#include <mpi.h>
+
+#define VECTOR_SIZE 10
+
+int main(int argc, char* argv[]) {
+    int rank, size;
+    int vector1[VECTOR_SIZE], vector2[VECTOR_SIZE], result[VECTOR_SIZE];
+    int i;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &size);
+    if (rank == 0) {
+        printf("Enter %d elements for vector 1:\n", VECTOR_SIZE);
+        for (i = 0; i < VECTOR_SIZE; i++) {
+            scanf("%d", &vector1[i]);
+            fflush(stdin);
+
+        }
+        printf("Enter %d elements for vector 2:\n", VECTOR_SIZE);
+        for (i = 0; i < VECTOR_SIZE; i++) {
+            scanf("%d", &vector2[i]);
+            fflush(stdin);
+
+        }
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    int local_size = VECTOR_SIZE / size;
+    int* local_vector1;
+    int* local_vector2;
+    int* local_result;
+    local_vector1 = (int*)malloc(local_size * sizeof(int));
+    local_vector2 = (int*)malloc(local_size * sizeof(int));
+    local_result = (int*)malloc(local_size * sizeof(int));
+
+
+    MPI_Scatter(vector1, local_size, MPI_INT, local_vector1, local_size, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Scatter(vector2, local_size, MPI_INT, local_vector2, local_size, MPI_INT, 0, MPI_COMM_WORLD);
+    for (i = 0; i < local_size; i++) {
+        local_result[i] = local_vector1[i] + local_vector2[i];
+    }
+    MPI_Gather(local_result, local_size, MPI_INT, result, local_size, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        printf("Vector addition result:\n");
+        for (i = 0; i < VECTOR_SIZE; i++) {
+            printf("%d ", result[i]);
+        }
+        printf("\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    for (i = 0; i < local_size; i++) {
+        local_result[i] = local_vector1[i] - local_vector2[i];
+    }
+    MPI_Gather(local_result, local_size, MPI_INT, result, local_size, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        printf("Vector subtraction result:\n");
+        for (i = 0; i < VECTOR_SIZE; i++) {
+            printf("%d ", result[i]);
+        }
+        printf("\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    for (i = 0; i < local_size; i++) {
+        local_result[i] = local_vector1[i] * local_vector2[i];
+    }
+    MPI_Gather(local_result, local_size, MPI_INT, result, local_size, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        printf("Vector multiplication result:\n");
+        for (i = 0; i < VECTOR_SIZE; i++) {
+            printf("%d ", result[i]);
+        }
+        printf("\n");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    for (i = 0; i < local_size; i++) {
+        local_result[i] = local_vector1[i] / local_vector2[i];
+    }
+    MPI_Gather(local_result, local_size, MPI_INT, result, local_size, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        printf("Vector division result:\n");
+        for (i = 0; i < VECTOR_SIZE; i++) {
+            printf("%d ", result[i]);
+        }
+        printf("\n");
+    }
+    MPI_Finalize();
+}
